@@ -30,6 +30,13 @@ see how your change affects other areas of the code, etc.
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to change)
 
+### Release target
+
+<!--- PRs target `master` first. Backport PRs (cherry-picks of fixes already merged to `master`) target the maintenance branch, e.g. `3.4.x`. -->
+
+- [ ] This fix should also be backported to the current maintenance branch (bug, security or CI fixes only)
+- [ ] This is a backport PR (target is a maintenance branch; link the original PR)
+
 ### Checklist
 
 <!--- Go over all the following points, and put an `x` in all the boxes that apply. -->

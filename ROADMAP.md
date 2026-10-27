@@ -25,7 +25,7 @@ Branched from Koseven 3.3.10. The primary goal is to ensure the framework runs c
 - Upgrade dev dependencies (PHPUnit, etc.) for PHP 8.x compatibility
 - Security patches as needed
 
-**Patch versions** (3.4.1, 3.4.2, ...) are released for security fixes and bug fixes.
+**Patch versions** (3.4.1, 3.4.2, ...) are released for security fixes and bug fixes. Once 3.5 development begins on `master`, they're released from the `3.4.x` maintenance branch, with fixes backported from `master` (see [Branches and Releases](CONTRIBUTING.md#branches-and-releases)).
 
 ### Future Minor Versions
 

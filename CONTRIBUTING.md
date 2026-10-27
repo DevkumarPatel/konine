@@ -18,7 +18,7 @@ git clone git@github.com:hospicedev/konine.git
 cd konine
 ```
 
-The default branch is `master`. All changes branch from `master` and merge back via PR.
+The default branch is `master`. All changes branch from `master` and merge back via PR. See [Branches and Releases](#branches-and-releases) for how maintenance branches and backports work.
 
 ## GitHub CLI Setup
 
@@ -58,9 +58,54 @@ Open an issue first with as much detail as possible. Then submit a PR referencin
 
 Open a feature request describing the problem and the behaviour you would like. Once the approach is agreed on the issue, a PR referencing it can be submitted.
 
-## Tagging Releases
+## Branches and Releases
+
+| Branch | Purpose |
+|--------|---------|
+| `master` | Integration branch for the next release. All PRs target `master` first. |
+| `3.4.x` (and later `3.5.x`, ...) | Maintenance branch for patch releases of a released minor version. Only created when needed (see below). |
+| `fix/*`, `feature/*`, `docs/*`, ... | Short-lived topic branches created from `master` and merged back via PR. |
+
+### Before a maintenance branch exists
+
+While everything merged since the last release is patch-level (bug fixes, security fixes, docs, CI), patch releases are tagged directly from `master`.
+
+### Creating a maintenance branch
+
+When the first change that belongs in the next **minor** version (a new feature, enhancement or deprecation) is ready to merge, a maintainer first creates the maintenance branch from the latest patch tag of the current minor version:
+
+```bash
+git fetch origin --tags
+git checkout -b 3.4.x v3.4.1   # latest 3.4 tag
+git push -u origin 3.4.x
+```
+
+The minor-level PR is then merged to `master`, which from that point on is the next minor version (e.g. 3.5.0).
+
+### Backporting fixes
+
+Once a maintenance branch exists:
+
+1. Bug fixes, security fixes and CI fixes are merged to `master` first, as usual.
+2. If the fix should also ship in a patch release, it is backported to the maintenance branch in a separate PR, using `git cherry-pick -x` so the original commit is recorded:
+
+   ```bash
+   git checkout -b backport/3.4.x/issue-16 origin/3.4.x
+   git cherry-pick -x <commit-sha>
+   git push -u origin backport/3.4.x/issue-16
+   ```
+
+   Open the PR against `3.4.x`, and reference both the issue and the original PR.
+3. New features, enhancements and deprecations are **not** backported.
+
+Security fixes may be prepared privately and merged to both branches at the same time.
+
+### Tagging Releases
 
 Tag names are prefixed with `v` (e.g. `v3.4.1`).
+
+- **Patch releases** (`v3.4.2`) are tagged from the maintenance branch (`3.4.x`), or from `master` if no maintenance branch exists yet.
+- **Minor releases** (`v3.5.0`) are tagged from `master`.
 
 ---
 
