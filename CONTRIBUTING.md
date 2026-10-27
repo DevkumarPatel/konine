@@ -98,7 +98,7 @@ Once a maintenance branch exists:
    Open the PR against `3.4.x`, and reference both the issue and the original PR.
 3. New features, enhancements and deprecations are **not** backported.
 
-Security fixes may be prepared privately and merged to both branches at the same time.
+Security fixes may be prepared privately (for example in a GitHub Security Advisory temporary private fork) so that they're published to `master` and the maintenance branch at the same time. They still go through reviewed PRs, including the mandatory security review. Patch tags for both branches are then cut together.
 
 ### Tagging Releases
 
