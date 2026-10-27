@@ -107,8 +107,16 @@ Do NOT make speculative feature additions, large refactors for style, or pattern
 
 | Branch | Purpose |
 |--------|---------|
-| `master` | Stable release branch. Tagged releases are cut from here. |
-| `feature/*` | Feature/fix branches. Created from `master`, merged back via PR. |
+| `master` | Integration branch for the next release. All PRs target `master` first. Minor releases are tagged from here, and so are patch releases while no maintenance branch exists. |
+| `3.4.x` | Maintenance branch for 3.4 patch releases. **Only created when the first minor-level change (feature, enhancement, deprecation) is ready to merge**, branched from the latest 3.4 tag. Patch releases are tagged from here once it exists. |
+| `fix/*`, `feature/*`, `docs/*` | Topic branches. Created from `master`, merged back via PR. |
+| `backport/<branch>/*` | Cherry-picks of fixes already merged to `master`, opened as PRs against a maintenance branch. |
+
+`devel` is a stale leftover and is not part of the workflow. Do not target it.
+
+### Backports
+
+Once a maintenance branch exists, bug, security and CI fixes land on `master` first. They're then backported with `git cherry-pick -x` in a separate PR against the maintenance branch, referencing the issue and the original PR. Features, enhancements and deprecations are never backported. Full procedure: `CONTRIBUTING.md` > Branches and Releases.
 
 ### Default Remote
 
@@ -129,7 +137,7 @@ git fetch upstream
 
 A security review is **required** before any pull request is opened -- no PR may be created until it has been completed. This applies to all changes, including documentation, since docs can introduce malicious links, leaked secrets, or misleading guidance.
 
-- Run the review against the full branch diff (`git diff master...HEAD`), not just the latest commit.
+- Run the review against the full branch diff relative to the PR's base branch (`git diff master...HEAD`, or `git diff 3.4.x...HEAD` for backports), not just the latest commit.
 - Use the `/security-review` skill (or the **security-reviewer** agent) to scan for: hardcoded secrets or credentials, unvalidated user input, injection (SQL, command, path), XSS / output-escaping gaps, insecure crypto, CSRF exposure, and any leakage of sensitive data in errors or logs.
 - Resolve all **CRITICAL** and **HIGH** findings before opening the PR. Document any accepted **MEDIUM**/**LOW** findings in the PR description with justification.
 - Record that the review was performed in the PR description (e.g. a "Security review: completed, no findings" note).
@@ -137,8 +145,8 @@ A security review is **required** before any pull request is opened -- no PR may
 ### Pull Requests
 
 - **A security review (above) must be completed before the PR is created.**
-- PRs target `master`
-- All changes require a PR -- no direct pushes to `master`
+- PRs target `master`, except backport PRs, which target the maintenance branch (e.g. `3.4.x`)
+- All changes require a PR -- no direct pushes to `master` or maintenance branches
 - PR descriptions should reference the relevant GitHub issue (e.g. `Refs #2`)
 - Keep PRs focused -- one concern per PR
 
@@ -146,8 +154,8 @@ A security review is **required** before any pull request is opened -- no PR may
 
 Semantic versioning from 3.4.0 onward:
 - **3.4.x** -- PHP 8.4 compatibility release (current)
-- **Patch versions** (3.4.1, 3.4.2) -- security fixes, bug fixes
-- **Minor versions** (3.5.0) -- requested enhancements, new features, or further PHP compatibility work
+- **Patch versions** (3.4.1, 3.4.2) -- security fixes, bug fixes. Tagged from `3.4.x` if it exists, otherwise from `master`
+- **Minor versions** (3.5.0) -- requested enhancements, new features, deprecations, or further PHP compatibility work. Tagged from `master`
 
 ### Commit Messages
 

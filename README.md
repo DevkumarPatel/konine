@@ -103,20 +103,26 @@ If you have an existing project on Koseven or Kohana, you can pull Konine's chan
 # Add Konine as a remote
 git remote add konine https://github.com/hospicedev/konine.git
 
-# Fetch all Konine branches
-git fetch konine
+# Fetch a release tag (replace v3.4.0 with the latest release). Fetching
+# the single tag into FETCH_HEAD avoids clashing with your own tags.
+git fetch konine --no-tags refs/tags/v3.4.0
 
 # Merge into your current branch
-git merge konine/master --allow-unrelated-histories
+git merge FETCH_HEAD --allow-unrelated-histories
 ```
 
 Resolve any merge conflicts — in general, keep your application code and favour Konine's versions of anything under `system/` and the bundled `modules/`, unless you have intentional local overrides in those directories.
 
-To pull future patches once the remote is set up:
+To pull future releases once the remote is set up, merge a release tag:
 
 ```bash
-git fetch konine && git merge konine/master
+# Replace v3.4.0 with the release you want. Fetching the single tag into
+# FETCH_HEAD avoids clashing with your application's own tags.
+git fetch konine --no-tags refs/tags/v3.4.0
+git merge FETCH_HEAD
 ```
+
+Release tags are the recommended way to update. `master` holds work for the next release and may include unreleased minor-version changes. To follow every patch for your current minor version between releases, merge its maintenance branch instead, once one exists (`git fetch konine --no-tags 3.4.x` then `git merge FETCH_HEAD`). See [Branches and Releases](CONTRIBUTING.md#branches-and-releases).
 
 See the [upgrading guide](https://konine.dev/documentation/kohana/upgrading-from-kohana) for a full list of breaking changes introduced in 3.4.x.
 
@@ -137,6 +143,8 @@ See the [documentation](https://konine.dev/documentation) for full setup instruc
 Semantic versioning from 3.4.0 onward:
 - **Patch versions** (3.4.1, 3.4.2, ...) — security fixes and bug fixes
 - **Minor versions** (3.5.0, ...) — requested enhancements, new features, and PHP compatibility work
+
+Patch releases for a minor version come from its maintenance branch (e.g. `3.4.x`) once the next minor version is under development on `master`. Until then, they're tagged from `master`.
 
 ---
 
