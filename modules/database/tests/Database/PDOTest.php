@@ -109,6 +109,45 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Database::quote_table
+	 * @covers Database::quote_column
+	 */
+	public function test_compile_adds_table_prefix()
+	{
+		$db = Database::instance('unittest_sqlite_prefix', [
+			'type'         => 'PDO',
+			'connection'   => [
+				'dsn'        => 'sqlite::memory:',
+				'persistent' => FALSE,
+			],
+			'table_prefix' => 'kn_',
+			'identifier'   => '"',
+			'caching'      => FALSE,
+		]);
+
+		try
+		{
+			$query = DB::select('people.name')
+				->from('people')
+				->join('pets')
+				->on('pets.person_id', '=', 'people.id')
+				->where('people.age', '>', 25);
+
+			$this->assertSame(
+				'SELECT "kn_people"."name" FROM "kn_people" JOIN "kn_pets" ON ("kn_pets"."person_id" = "kn_people"."id") WHERE "kn_people"."age" > 25',
+				$query->compile($db)
+			);
+		}
+		finally
+		{
+			$db->disconnect();
+
+			unset(Database::$instances['unittest_sqlite_prefix']);
+		}
+	}
+
+	/**
+	 * @test
 	 * @covers Database_PDO::query
 	 */
 	public function test_select_returns_matching_rows()
@@ -248,6 +287,38 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 
 		$this->assertTrue($this->db->commit());
 		$this->assertSame(4, $this->db->count_records('people'));
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::create_function
+	 */
+	public function test_create_function_is_callable_from_sql()
+	{
+		$this->db->create_function('double_value', function ($value) {
+			return $value * 2;
+		}, 1);
+
+		$result = $this->db->query(Database::SELECT, 'SELECT double_value("age") AS "doubled" FROM "people" WHERE "id" = 1');
+
+		$this->assertSame(60, $result->get('doubled'));
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::create_aggregate
+	 */
+	public function test_create_aggregate_is_callable_from_sql()
+	{
+		$this->db->create_aggregate('total_age', function ($total, $row, $value) {
+			return $total + $value;
+		}, function ($total, $rows) {
+			return $total;
+		}, 1);
+
+		$result = $this->db->query(Database::SELECT, 'SELECT total_age("age") AS "total" FROM "people"');
+
+		$this->assertSame(90, $result->get('total'));
 	}
 
 	/**
