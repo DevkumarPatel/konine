@@ -151,7 +151,7 @@ Patch releases for a minor version come from its maintenance branch (e.g. `3.4.x
 ## Contributing
 
 Contributions are welcome for:
-- Security vulnerabilities
+- Security vulnerabilities (report these **privately**: see [SECURITY.md](SECURITY.md))
 - PHP compatibility bugs
 - Regressions from PHP version changes
 - Bug fixes for existing functionality
