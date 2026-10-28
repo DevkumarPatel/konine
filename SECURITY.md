@@ -28,10 +28,10 @@ Report them privately through GitHub's private vulnerability reporting:
 
 Please include as much of the following as you can:
 
-- the affected component (e.g. `system/classes/Kohana/Cookie.php`, the `cache` module);
+- the affected component (e.g. a file such as `system/classes/Kohana/Request.php`, or a module such as `orm`);
 - the Konine version and PHP version;
-- the type of issue (e.g. SQL injection, XSS, insecure deserialization, path traversal);
-- the conditions needed to exploit it (configuration, local access, authentication);
+- the type of issue (e.g. SQL injection, cross-site scripting, authentication bypass);
+- the conditions needed to exploit it (e.g. configuration, required privileges);
 - steps to reproduce, or a minimal proof of concept;
 - the impact, as you understand it;
 - a suggested fix, if you have one.
