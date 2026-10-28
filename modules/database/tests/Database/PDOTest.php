@@ -1,0 +1,302 @@
+<?php
+
+/**
+ * Test case for Kohana_Database_PDO and the query builder, run against an
+ * in-memory SQLite database.
+ *
+ * @package    Kohana/Database
+ * @group      kohana
+ * @group      kohana.database
+ * @category   Test
+ * @author     Kohana Team
+ * @copyright  (c) Kohana Team
+ * @license    https://github.com/hospicedev/konine/blob/master/LICENSE.md
+ */
+
+class Kohana_Database_PDOTest extends Unittest_TestCase
+{
+	/**
+	 * @var Database_PDO
+	 */
+	protected $db;
+
+	/**
+	 * Creates a fresh in-memory database with a small "people" table.
+	 *
+	 * No charset is configured: Database_PDO::set_charset() issues
+	 * "SET NAMES", which SQLite does not understand.
+	 */
+	public function setUp(): void
+	{
+		parent::setUp();
+
+		$this->db = Database::instance('unittest_sqlite', [
+			'type'         => 'PDO',
+			'connection'   => [
+				'dsn'        => 'sqlite::memory:',
+				'persistent' => FALSE,
+			],
+			'table_prefix' => '',
+			'identifier'   => '"',
+			'caching'      => FALSE,
+		]);
+
+		$this->db->query(NULL, 'CREATE TABLE "people" ("id" INTEGER PRIMARY KEY AUTOINCREMENT, "name" TEXT NOT NULL, "age" INTEGER)');
+		$this->db->query(Database::INSERT, "INSERT INTO \"people\" (\"name\", \"age\") VALUES ('alice', 30), ('bob', 25), ('carol', 35)");
+	}
+
+	public function tearDown(): void
+	{
+		$this->db->disconnect();
+
+		unset(Database::$instances['unittest_sqlite']);
+
+		$this->db = NULL;
+
+		parent::tearDown();
+	}
+
+	/**
+	 * Provides test data for test_compile()
+	 *
+	 * @return array
+	 */
+	public function provider_compile()
+	{
+		return [
+			[
+				'SELECT "id", "name" FROM "people" WHERE "age" > 25 AND "name" IS NOT NULL OR "id" IN (1, 2) ORDER BY "name" DESC LIMIT 2 OFFSET 1',
+				DB::select('id', 'name')
+					->from('people')
+					->where('age', '>', 25)
+					->and_where('name', '!=', NULL)
+					->or_where('id', 'IN', [1, 2])
+					->order_by('name', 'desc')
+					->limit(2)
+					->offset(1),
+			],
+			[
+				'SELECT * FROM "people" WHERE "name" = \'bob\'',
+				DB::select()->from('people')->where('name', '=', ':name')->param(':name', 'bob'),
+			],
+			[
+				'INSERT INTO "people" ("name", "age") VALUES (\'dave\', 40), (\'o\'\'neil\', NULL)',
+				DB::insert('people', ['name', 'age'])->values(['dave', 40])->values(["o'neil", NULL]),
+			],
+			[
+				'UPDATE "people" SET "age" = 31, "name" = \'Alice\' WHERE "name" = \'alice\'',
+				DB::update('people')->set(['age' => 31, 'name' => 'Alice'])->where('name', '=', 'alice'),
+			],
+			[
+				'DELETE FROM "people" WHERE "age" BETWEEN 20 AND 30',
+				DB::delete('people')->where('age', 'BETWEEN', [20, 30]),
+			],
+		];
+	}
+
+	/**
+	 * @test
+	 * @covers Database_Query_Builder_Select::compile
+	 * @covers Database_Query_Builder_Insert::compile
+	 * @covers Database_Query_Builder_Update::compile
+	 * @covers Database_Query_Builder_Delete::compile
+	 * @dataProvider provider_compile
+	 */
+	public function test_compile($expected, Database_Query $query)
+	{
+		$this->assertSame($expected, $query->compile($this->db));
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::query
+	 */
+	public function test_select_returns_matching_rows()
+	{
+		$result = DB::select('name', 'age')
+			->from('people')
+			->where('age', '>=', 30)
+			->order_by('age')
+			->execute($this->db);
+
+		$this->assertInstanceOf('Database_Result', $result);
+		$this->assertSame([
+			['name' => 'alice', 'age' => 30],
+			['name' => 'carol', 'age' => 35],
+		], $result->as_array());
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::query
+	 */
+	public function test_insert_returns_insert_id_and_affected_rows()
+	{
+		$result = DB::insert('people', ['name', 'age'])
+			->values(['dave', 40])
+			->values(['erin', 45])
+			->execute($this->db);
+
+		$this->assertSame(['5', 2], $result);
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::query
+	 */
+	public function test_update_returns_affected_rows()
+	{
+		$this->assertSame(2, DB::update('people')->set(['age' => 50])->where('age', '<', 35)->execute($this->db));
+		$this->assertSame(['alice' => 50, 'bob' => 50, 'carol' => 35], DB::select('name', 'age')->from('people')->execute($this->db)->as_array('name', 'age'));
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::query
+	 */
+	public function test_delete_returns_affected_rows()
+	{
+		$this->assertSame(1, DB::delete('people')->where('name', '=', 'bob')->execute($this->db));
+		$this->assertSame(0, DB::delete('people')->where('name', '=', 'bob')->execute($this->db));
+		$this->assertSame(2, $this->db->count_records('people'));
+	}
+
+	/**
+	 * Provides test data for test_quote()
+	 *
+	 * @return array
+	 */
+	public function provider_quote()
+	{
+		return [
+			["'it''s'", "it's"],
+			['NULL', NULL],
+			["'1'", TRUE],
+			["'0'", FALSE],
+			[42, 42],
+			['1.500000', 1.5],
+			['COUNT("id")', DB::expr('COUNT("id")')],
+			["('a', 1, NULL)", ['a', 1, NULL]],
+		];
+	}
+
+	/**
+	 * @test
+	 * @covers Database::quote
+	 * @covers Database_PDO::escape
+	 * @dataProvider provider_quote
+	 */
+	public function test_quote($expected, $value)
+	{
+		$this->assertSame($expected, $this->db->quote($value));
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::query
+	 */
+	public function test_as_object_returns_stdclass()
+	{
+		$row = DB::select('name')->from('people')->where('id', '=', 2)->as_object()->execute($this->db)->current();
+
+		$this->assertInstanceOf('stdClass', $row);
+		$this->assertSame('bob', $row->name);
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::query
+	 */
+	public function test_as_object_returns_instances_of_class()
+	{
+		$result = DB::select('id', 'name')
+			->from('people')
+			->order_by('id')
+			->as_object('Kohana_Database_PDOTest_Person')
+			->execute($this->db);
+
+		$this->assertContainsOnlyInstancesOf('Kohana_Database_PDOTest_Person', $result->as_array());
+		$this->assertSame('alice', $result->get('name'));
+		$this->assertSame([1 => 'alice', 2 => 'bob', 3 => 'carol'], $result->as_array('id', 'name'));
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::begin
+	 * @covers Database_PDO::rollback
+	 */
+	public function test_rollback_discards_changes()
+	{
+		$this->assertTrue($this->db->begin());
+
+		DB::delete('people')->execute($this->db);
+
+		$this->assertTrue($this->db->rollback());
+		$this->assertSame(3, $this->db->count_records('people'));
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::begin
+	 * @covers Database_PDO::commit
+	 */
+	public function test_commit_keeps_changes()
+	{
+		$this->assertTrue($this->db->begin());
+
+		DB::insert('people', ['name'])->values(['dave'])->execute($this->db);
+
+		$this->assertTrue($this->db->commit());
+		$this->assertSame(4, $this->db->count_records('people'));
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::query
+	 */
+	public function test_invalid_sql_throws_database_exception()
+	{
+		$this->expectException(Database_Exception::class);
+		$this->expectExceptionMessage('[ SELECT * FROM "missing" ]');
+
+		DB::select()->from('missing')->execute($this->db);
+	}
+
+	/**
+	 * @test
+	 * @covers Database_Result::as_array
+	 */
+	public function test_result_as_array_with_key_and_value_columns()
+	{
+		$result = DB::select('id', 'name')->from('people')->order_by('id')->execute($this->db);
+
+		$this->assertSame(['alice', 'bob', 'carol'], $result->as_array(NULL, 'name'));
+		$this->assertSame(['bob' => ['id' => 2, 'name' => 'bob']], array_slice($result->as_array('name'), 1, 1));
+		$this->assertSame(['alice' => 1, 'bob' => 2, 'carol' => 3], $result->as_array('name', 'id'));
+	}
+
+	/**
+	 * @test
+	 * @covers Database_Result::get
+	 * @covers Database_Result::count
+	 */
+	public function test_result_get_and_count()
+	{
+		$result = DB::select('name', 'age')->from('people')->order_by('age')->execute($this->db);
+
+		$this->assertCount(3, $result);
+		$this->assertSame('bob', $result->get('name'));
+		$this->assertSame('default', $result->get('missing', 'default'));
+
+		$empty = DB::select()->from('people')->where('age', '>', 100)->execute($this->db);
+
+		$this->assertCount(0, $empty);
+		$this->assertNull($empty->get('name'));
+	}
+}
+
+class Kohana_Database_PDOTest_Person
+{
+	public $id;
+	public $name;
+}
