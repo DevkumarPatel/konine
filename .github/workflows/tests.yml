@@ -33,6 +33,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, gd, redis, memcache, http, apcu
+          ini-values: apc.enabled=1, apc.enable_cli=1
           tools: composer:v2
           coverage: pcov
 
