@@ -14,7 +14,7 @@ Security fixes are released as patch versions (e.g. 3.4.1) of the supported mino
 When a new minor version is released (e.g. 3.5.0):
 
 - the newest minor version receives all security and bug fixes;
-- the previous minor version (e.g. 3.4.x) keeps receiving **security fixes** from its maintenance branch, at least until upstream PHP security support ends for the PHP version it targets (for PHP 8.4, 31 December 2028).
+- each older minor version keeps receiving **security fixes** from its maintenance branch until upstream PHP security support ends for the PHP version it targets (for 3.4.x on PHP 8.4: 31 December 2028), even after newer minor versions are released.
 
 See [Branches and Releases](CONTRIBUTING.md#branches-and-releases) for how maintenance branches work.
 
@@ -42,7 +42,7 @@ Only report vulnerabilities in Konine itself. Issues in your application code, t
 
 1. We aim to acknowledge your report within 7 days.
 2. We confirm the issue and assess its severity, and may ask you for more information.
-3. The fix is developed privately in the advisory's temporary private fork, and goes through the same review and security review as any other change.
+3. The fix is prepared privately (for example in the advisory's temporary private fork). It goes through the same code review and security review as any other change, and the full test suite is run before release.
 4. Fixed patch versions are released for all supported versions at the same time, and the advisory is published, with a CVE where appropriate.
 5. Unless you prefer to stay anonymous, you are credited in the advisory.
 
@@ -50,4 +50,4 @@ Please give us a reasonable amount of time to release a fix before disclosing th
 
 ## Security Updates
 
-Security releases are announced through [GitHub Security Advisories](https://github.com/hospicedev/konine/security/advisories) and the [releases page](https://github.com/hospicedev/konine/releases). To be notified, watch the repository and select **Security alerts** (or **Releases**).
+Security releases are announced through [GitHub Security Advisories](https://github.com/hospicedev/konine/security/advisories) and the [releases page](https://github.com/hospicedev/konine/releases). Every security fix is published as a GitHub release. To be notified, watch the repository with **Custom → Releases**.
