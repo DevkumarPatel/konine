@@ -148,6 +148,27 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	}
 
 	/**
+	 * values() is the mass-assignment guard for request data, so keys outside
+	 * $expected must be ignored.
+	 *
+	 * @test
+	 * @covers ORM::values
+	 */
+	public function test_values_ignores_keys_not_expected()
+	{
+		$user = ORM::factory('ORMTest_User')
+			->values(['username' => 'carol', 'email' => 'carol@example.com', 'id' => 99], ['username']);
+
+		$this->assertSame(['username' => 'username'], $user->changed());
+		$this->assertNull($user->email);
+
+		$user->save();
+
+		$this->assertEquals(3, $user->pk());
+		$this->assertFalse(ORM::factory('ORMTest_User', 99)->loaded());
+	}
+
+	/**
 	 * The email is changed behind the model's back, so it only survives if
 	 * update() writes nothing but the changed column.
 	 *
