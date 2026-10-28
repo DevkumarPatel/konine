@@ -1,0 +1,53 @@
+# Security Policy
+
+Security fixes are Konine's first priority, alongside PHP compatibility and stability for existing applications.
+
+## Supported Versions
+
+| Version | PHP | Security fixes |
+|---------|-----|----------------|
+| 3.4.x   | 8.4 | :white_check_mark: Yes |
+| < 3.4 (Kohana, Koseven) | — | :x: No (upstream projects are end-of-life) |
+
+Security fixes are released as patch versions (e.g. 3.4.1) of the supported minor versions.
+
+When a new minor version is released (e.g. 3.5.0):
+
+- the newest minor version receives all security and bug fixes;
+- the previous minor version (e.g. 3.4.x) keeps receiving **security fixes** from its maintenance branch, at least until upstream PHP security support ends for the PHP version it targets (for PHP 8.4, 31 December 2028).
+
+See [Branches and Releases](CONTRIBUTING.md#branches-and-releases) for how maintenance branches work.
+
+## Reporting a Vulnerability
+
+**Do not report security vulnerabilities through public GitHub issues, pull requests or discussions.**
+
+Report them privately through GitHub's private vulnerability reporting:
+
+**[Report a vulnerability](https://github.com/hospicedev/konine/security/advisories/new)** (or go to the repository's **Security** tab and choose **Report a vulnerability**). You need to be signed in to a GitHub account to submit a report.
+
+Please include as much of the following as you can:
+
+- the affected component (e.g. `system/classes/Kohana/Cookie.php`, the `cache` module);
+- the Konine version and PHP version;
+- the type of issue (e.g. SQL injection, XSS, insecure deserialization, path traversal);
+- the conditions needed to exploit it (configuration, local access, authentication);
+- steps to reproduce, or a minimal proof of concept;
+- the impact, as you understand it;
+- a suggested fix, if you have one.
+
+Only report vulnerabilities in Konine itself. Issues in your application code, third-party libraries or your server configuration should go to their own maintainers.
+
+## What Happens Next
+
+1. We aim to acknowledge your report within 7 days.
+2. We confirm the issue and assess its severity, and may ask you for more information.
+3. The fix is developed privately in the advisory's temporary private fork, and goes through the same review and security review as any other change.
+4. Fixed patch versions are released for all supported versions at the same time, and the advisory is published, with a CVE where appropriate.
+5. Unless you prefer to stay anonymous, you are credited in the advisory.
+
+Please give us a reasonable amount of time to release a fix before disclosing the issue publicly. We will keep you informed of progress and agree a disclosure date with you.
+
+## Security Updates
+
+Security releases are announced through [GitHub Security Advisories](https://github.com/hospicedev/konine/security/advisories) and the [releases page](https://github.com/hospicedev/konine/releases). To be notified, watch the repository and select **Security alerts** (or **Releases**).
