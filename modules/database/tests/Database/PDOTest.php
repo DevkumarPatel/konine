@@ -124,6 +124,20 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 					return DB::select(['people.name', 'n'], [DB::expr('COUNT(*)'), 'total'])->from(['people', 'p']);
 				},
 			],
+			[
+				'SELECT * FROM "people" WHERE "id" IN (NULL)',
+				function () {
+					return DB::select()->from('people')->where('id', 'IN', []);
+				},
+			],
+			[
+				'SELECT "name" FROM "people" WHERE "id" IN (SELECT "id" FROM "people" WHERE "age" > 30)',
+				function () {
+					return DB::select('name')
+						->from('people')
+						->where('id', 'IN', DB::select('id')->from('people')->where('age', '>', 30));
+				},
+			],
 		];
 	}
 
@@ -407,6 +421,24 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 		$this->expectExceptionMessage('[ SELECT * FROM "missing" ]');
 
 		DB::select()->from('missing')->execute($this->db);
+	}
+
+	/**
+	 * The sort direction is checked when the query is compiled, not when
+	 * order_by() is called.
+	 *
+	 * @test
+	 * @covers Database_Query_Builder_Where::order_by
+	 * @covers Database_Query_Builder::_compile_order_by
+	 */
+	public function test_invalid_sort_direction_throws_database_exception()
+	{
+		$query = DB::select()->from('people')->order_by('name', 'bogus');
+
+		$this->expectException(Database_Exception::class);
+		$this->expectExceptionMessage('Invalid sorting direction');
+
+		$query->compile($this->db);
 	}
 
 	/**
