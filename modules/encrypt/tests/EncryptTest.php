@@ -63,6 +63,21 @@ class Kohana_EncryptTest extends Unittest_TestCase
 	}
 
 	/**
+	 * @test
+	 * @covers Encrypt::__construct
+	 * @covers Encrypt::encode
+	 * @covers Encrypt::decode
+	 * @covers Encrypt_Engine::__construct
+	 * @covers Encrypt_Engine_Openssl::__construct
+	 */
+	public function test_string_key_constructor_uses_default_cipher()
+	{
+		$encrypt = new Encrypt($this->key);
+
+		$this->assertSame('test text', $encrypt->decode($encrypt->encode('test text')));
+	}
+
+	/**
 	 * Each encode uses a random IV, so the same text must not produce the
 	 * same output twice.
 	 *
@@ -172,16 +187,32 @@ class Kohana_EncryptTest extends Unittest_TestCase
 	}
 
 	/**
+	 * Provides test data for test_invalid_key_or_cipher_throws_exception()
+	 *
+	 * @return array
+	 */
+	public function provider_invalid_key_or_cipher_throws_exception()
+	{
+		return [
+			// [key, cipher]
+			['test-key-0123456', 'AES-256-CBC'],
+			['test-key-0123456789-test-key-012', 'AES-128-CBC'],
+			['test-key-0123456789-test-key-012', 'AES-256-GCM'],
+		];
+	}
+
+	/**
 	 * @test
+	 * @dataProvider provider_invalid_key_or_cipher_throws_exception
 	 * @covers Encrypt::__construct
 	 * @covers Encrypt_Engine::__construct
 	 * @covers Encrypt_Engine_Openssl::__construct
 	 */
-	public function test_key_must_match_cipher_length()
+	public function test_invalid_key_or_cipher_throws_exception($key, $cipher)
 	{
 		$this->expectException('Kohana_Exception');
 
-		new Encrypt(['key' => 'test-key-0123456', 'cipher' => 'AES-256-CBC']);
+		new Encrypt(['key' => $key, 'cipher' => $cipher]);
 	}
 
 	/**
