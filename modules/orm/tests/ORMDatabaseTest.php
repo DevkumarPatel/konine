@@ -72,7 +72,10 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @covers ORM::__construct
+	 * @covers ORM::find
+	 * @covers ORM::_load_values
 	 * @covers ORM::loaded
+	 * @covers ORM::pk
 	 */
 	public function test_loads_record_by_primary_key()
 	{
@@ -87,6 +90,8 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @covers ORM::__construct
+	 * @covers ORM::find
+	 * @covers ORM::clear
 	 * @covers ORM::loaded
 	 */
 	public function test_missing_primary_key_is_not_loaded()
@@ -100,7 +105,10 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers ORM::where
 	 * @covers ORM::find
+	 * @covers ORM::_load_result
+	 * @covers ORM::_load_values
 	 */
 	public function test_find_loads_first_matching_row()
 	{
@@ -114,7 +122,11 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers ORM::where
+	 * @covers ORM::order_by
 	 * @covers ORM::find_all
+	 * @covers ORM::_load_result
+	 * @covers ORM::__construct
 	 */
 	public function test_find_all_returns_models_for_matching_rows()
 	{
@@ -131,8 +143,12 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers ORM::set
 	 * @covers ORM::save
 	 * @covers ORM::create
+	 * @covers ORM::check
+	 * @covers ORM::saved
+	 * @covers ORM::changed
 	 */
 	public function test_save_creates_record_and_sets_primary_key()
 	{
@@ -153,6 +169,10 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	 *
 	 * @test
 	 * @covers ORM::values
+	 * @covers ORM::set
+	 * @covers ORM::changed
+	 * @covers ORM::save
+	 * @covers ORM::create
 	 */
 	public function test_values_ignores_keys_not_expected()
 	{
@@ -169,11 +189,58 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	}
 
 	/**
+	 * Without $expected, values() must still drop the primary key, so that
+	 * ->values($_POST) cannot choose the id of a new record.
+	 *
+	 * @test
+	 * @covers ORM::values
+	 * @covers ORM::set
+	 * @covers ORM::changed
+	 * @covers ORM::save
+	 * @covers ORM::create
+	 */
+	public function test_values_without_expected_skips_primary_key_on_create()
+	{
+		$user = ORM::factory('ORMTest_User')
+			->values(['id' => 99, 'username' => 'carol', 'email' => 'carol@example.com']);
+
+		$this->assertSame(['username' => 'username', 'email' => 'email'], $user->changed());
+
+		$user->save();
+
+		$this->assertEquals(3, $user->pk());
+		$this->assertFalse(ORM::factory('ORMTest_User', 99)->loaded());
+	}
+
+	/**
+	 * Without $expected, values() must not let ->values($_POST) move an
+	 * update onto another record.
+	 *
+	 * @test
+	 * @covers ORM::values
+	 * @covers ORM::set
+	 * @covers ORM::save
+	 * @covers ORM::update
+	 */
+	public function test_values_without_expected_skips_primary_key_on_update()
+	{
+		$user = ORM::factory('ORMTest_User', 1)
+			->values(['id' => 2, 'email' => 'new@example.com'])
+			->save();
+
+		$this->assertEquals(1, $user->pk());
+		$this->assertSame('new@example.com', ORM::factory('ORMTest_User', 1)->email);
+		$this->assertSame('bob@example.com', ORM::factory('ORMTest_User', 2)->email);
+	}
+
+	/**
 	 * The email is changed behind the model's back, so it only survives if
 	 * update() writes nothing but the changed column.
 	 *
 	 * @test
+	 * @covers ORM::set
 	 * @covers ORM::changed
+	 * @covers ORM::save
 	 * @covers ORM::update
 	 */
 	public function test_update_writes_only_changed_columns()
@@ -206,6 +273,8 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @covers ORM::delete
+	 * @covers ORM::clear
+	 * @covers ORM::count_all
 	 */
 	public function test_delete_removes_record_and_clears_model()
 	{
@@ -221,6 +290,7 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @covers ORM::get
+	 * @covers ORM::_related
 	 */
 	public function test_belongs_to_loads_parent()
 	{
@@ -234,6 +304,8 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @covers ORM::get
+	 * @covers ORM::find_all
+	 * @covers ORM::count_all
 	 */
 	public function test_has_many_finds_children()
 	{
@@ -248,6 +320,9 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @covers ORM::get
+	 * @covers ORM::join
+	 * @covers ORM::on
+	 * @covers ORM::find_all
 	 */
 	public function test_has_many_through_finds_related()
 	{
@@ -263,6 +338,7 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	 * @covers ORM::add
 	 * @covers ORM::remove
 	 * @covers ORM::has
+	 * @covers ORM::count_relations
 	 */
 	public function test_add_and_remove_has_many_through()
 	{
@@ -290,7 +366,11 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers ORM::save
+	 * @covers ORM::create
 	 * @covers ORM::check
+	 * @covers ORM::_validation
+	 * @covers ORM_Validation_Exception::errors
 	 */
 	public function test_failed_rules_throw_validation_exception()
 	{
@@ -316,19 +396,32 @@ class Kohana_ORMDatabaseTest extends Unittest_TestCase
 	}
 
 	/**
+	 * ORM reloads the record on wakeup by default, so a row changed while the
+	 * model was serialized (e.g. stored in a session) must come back with the
+	 * current database values rather than the serialized ones.
+	 *
 	 * @test
 	 * @covers ORM::__serialize
 	 * @covers ORM::__unserialize
+	 * @covers ORM::__wakeup
+	 * @covers ORM::reload
 	 */
-	public function test_serialize_round_trip_keeps_loaded_data()
+	public function test_unserialize_reloads_current_row()
 	{
-		$user = unserialize(serialize(ORM::factory('ORMTest_User', 2)));
+		$serialized = serialize(ORM::factory('ORMTest_User', 2));
+
+		DB::update('ormtest_users')
+			->set(['email' => 'changed@example.com'])
+			->where('id', '=', 2)
+			->execute($this->db);
+
+		$user = unserialize($serialized);
 
 		$this->assertInstanceOf('Model_ORMTest_User', $user);
 		$this->assertTrue($user->loaded());
 		$this->assertEquals(2, $user->pk());
 		$this->assertSame('bob', $user->username);
-		$this->assertSame('bob@example.com', $user->email);
+		$this->assertSame('changed@example.com', $user->email);
 	}
 }
 

@@ -21,19 +21,6 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 	 */
 	protected $db;
 
-	/**
-	 * Driver configuration shared by the tests
-	 * @var array
-	 */
-	protected $config = [
-		'hash_method'  => 'sha256',
-		'hash_key'     => 'unittest-key',
-		'lifetime'     => 1209600,
-		'session_type' => 'unittest_auth',
-		'session_key'  => 'auth_user',
-		'cost'         => 10,
-	];
-
 	public function setUp(): void
 	{
 		parent::setUp();
@@ -66,7 +53,12 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 			],
 			'Kohana_Auth::$_instance'    => NULL,
 			'Session::$instances'        => ['unittest_auth' => new Session_Auth_Example] + Session::$instances,
+			'auth.driver'                => 'ORM',
+			'auth.hash_method'           => 'sha256',
+			'auth.hash_key'              => 'unittest-key',
+			'auth.cost'                  => 10,
 			'auth.session_type'          => 'unittest_auth',
+			'auth.session_key'           => 'auth_user',
 		]);
 
 		$statements = [
@@ -97,6 +89,20 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 	}
 
 	/**
+	 * Returns Auth::instance() for the given driver, so the driver under test
+	 * is also the one Model_Auth_User::filters() hashes passwords with.
+	 *
+	 * @param  string $driver
+	 * @return Auth
+	 */
+	protected function auth($driver)
+	{
+		$this->setEnvironment(['auth.driver' => $driver]);
+
+		return Auth::instance();
+	}
+
+	/**
 	 * Inserts a user with the given password hash and role ids.
 	 *
 	 * @param  string $username
@@ -120,12 +126,19 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Auth::instance
+	 * @covers Auth::login
+	 * @covers Auth::complete_login
 	 * @covers Auth_ORM::_login
+	 * @covers Auth_ORM::complete_login
 	 * @covers Auth_ORM::logged_in
+	 * @covers Auth_ORM::get_user
+	 * @covers Model_Auth_User::unique_key
+	 * @covers Model_Auth_User::complete_login
 	 */
 	public function test_orm_login_succeeds_for_user_with_login_role()
 	{
-		$auth = new Auth_ORM($this->config);
+		$auth = $this->auth('ORM');
 
 		$this->insert_user('alice', $auth->hash('password'), [1]);
 
@@ -148,11 +161,13 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Auth::login
 	 * @covers Auth_ORM::_login
+	 * @covers Auth_ORM::logged_in
 	 */
 	public function test_orm_login_fails_for_wrong_password_or_missing_login_role()
 	{
-		$auth = new Auth_ORM($this->config);
+		$auth = $this->auth('ORM');
 
 		$this->insert_user('alice', $auth->hash('password'), [1]);
 		$this->insert_user('bob', $auth->hash('password'), [2]);
@@ -164,14 +179,20 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Auth::login
+	 * @covers Auth::logout
 	 * @covers Auth_ORM::logout
+	 * @covers Auth_ORM::logged_in
+	 * @covers Auth_ORM::get_user
 	 */
 	public function test_orm_logout_clears_logged_in_user()
 	{
-		$auth = new Auth_ORM($this->config);
+		$auth = $this->auth('ORM');
 
 		$this->insert_user('alice', $auth->hash('password'), [1]);
-		$auth->login('alice', 'password');
+
+		$this->assertTrue($auth->login('alice', 'password'));
+		$this->assertTrue($auth->logged_in());
 
 		$this->assertTrue($auth->logout());
 		$this->assertFalse($auth->logged_in());
@@ -180,13 +201,12 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Auth_Bcrypt::__construct
 	 * @covers Auth_Bcrypt::hash
 	 */
 	public function test_bcrypt_hash_verifies_with_password_verify()
 	{
-		$auth = new Auth_Bcrypt($this->config);
-
-		$hash = $auth->hash('password');
+		$hash = $this->auth('Bcrypt')->hash('password');
 
 		$this->assertTrue(password_verify('password', $hash));
 		$this->assertFalse(password_verify('wrong-password', $hash));
@@ -195,11 +215,16 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Auth::login
+	 * @covers Auth::logged_in
+	 * @covers Auth::complete_login
 	 * @covers Auth_Bcrypt::_login
+	 * @covers Auth_Bcrypt::get_user
+	 * @covers Model_Auth_User::complete_login
 	 */
 	public function test_bcrypt_login_checks_password()
 	{
-		$auth = new Auth_Bcrypt($this->config);
+		$auth = $this->auth('Bcrypt');
 
 		$this->insert_user('alice', $auth->hash('password'), [1]);
 
@@ -209,6 +234,89 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 		$this->assertTrue($auth->login('alice', 'password'));
 		$this->assertTrue($auth->logged_in());
 		$this->assertSame('alice', $auth->get_user()->username);
+	}
+
+	/**
+	 * @return array
+	 */
+	public function provider_create_user_hashes_password()
+	{
+		return [
+			['ORM', '/^[0-9a-f]{64}$/'],
+			['Bcrypt', '/^\$2y\$10\$/'],
+		];
+	}
+
+	/**
+	 * Model_Auth_User::filters() hashes the password through Auth::instance(),
+	 * so a user created through the model must be able to log in with the
+	 * same driver.
+	 *
+	 * @test
+	 * @dataProvider provider_create_user_hashes_password
+	 * @covers Model_Auth_User::create_user
+	 * @covers Model_Auth_User::filters
+	 * @covers Model_Auth_User::get_password_validation
+	 * @covers Auth::hash
+	 * @covers Auth::login
+	 * @covers Auth_ORM::_login
+	 * @covers Auth_Bcrypt::hash
+	 * @covers Auth_Bcrypt::_login
+	 * @param string $driver      Auth driver
+	 * @param string $hash_format Expected format of the stored password
+	 */
+	public function test_create_user_stores_password_hash_that_logs_in($driver, $hash_format)
+	{
+		$auth = $this->auth($driver);
+
+		$user = ORM::factory('User')->create_user([
+			'username'         => 'carol',
+			'email'            => 'carol@example.com',
+			'password'         => 'test password',
+			'password_confirm' => 'test password',
+		], ['username', 'email', 'password']);
+
+		$user->add('roles', ORM::factory('Role', ['name' => 'login']));
+
+		$stored = DB::select('password')
+			->from('users')
+			->where('id', '=', $user->pk())
+			->execute($this->db)
+			->get('password');
+
+		$this->assertNotSame('test password', $stored);
+		$this->assertMatchesRegularExpression($hash_format, $stored);
+		$this->assertTrue($auth->login('carol', 'test password'));
+	}
+
+	/**
+	 * @return array
+	 */
+	public function provider_drivers()
+	{
+		return [
+			['ORM'],
+			['Bcrypt'],
+		];
+	}
+
+	/**
+	 * @test
+	 * @dataProvider provider_drivers
+	 * @covers Auth_ORM::check_password
+	 * @covers Auth_Bcrypt::check_password
+	 * @param string $driver Auth driver
+	 */
+	public function test_check_password_compares_with_logged_in_user($driver)
+	{
+		$auth = $this->auth($driver);
+
+		$this->insert_user('alice', $auth->hash('password'), [1]);
+
+		$this->assertFalse($auth->check_password('password'));
+		$this->assertTrue($auth->login('alice', 'password'));
+		$this->assertTrue($auth->check_password('password'));
+		$this->assertFalse($auth->check_password('wrong-password'));
 	}
 }
 
