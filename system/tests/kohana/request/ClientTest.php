@@ -16,7 +16,8 @@
  */
 class Kohana_Request_ClientTest extends Unittest_TestCase
 {
-	protected $_inital_request;
+	protected $_initial_request;
+	protected $requests_executed;
 	protected static $_original_routes;
 
 	// @codingStandardsIgnoreStart - PHPUnit does not follow standards

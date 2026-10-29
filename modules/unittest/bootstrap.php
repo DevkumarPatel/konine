@@ -146,17 +146,18 @@ unset($modules_iterator, $modules, $module);
  * no other handler is active, so it never sees deprecations. Forward those
  * to PHPUnit while a test is running, so they are listed, can be recorded in
  * the baseline (phpunit-baseline.xml) and fail the run when new. All other
- * errors, and deprecations outside a test, still go to Kohana::error_handler(),
- * as they do in an application.
+ * errors, and deprecations outside a test, go to the previous handler, as
+ * they do in an application.
  *
  * Regenerate the baseline on the newest supported PHP version, which reports
  * the most deprecations, with:
  *
  *     vendor/bin/phpunit --generate-baseline phpunit-baseline.xml
  */
-set_error_handler(function ($code, $error, $file, $line)
+$previous = set_error_handler(function ($code, $error, $file, $line) use (&$previous)
 {
-	if (($code & (E_DEPRECATED | E_USER_DEPRECATED)) AND (error_reporting() & $code))
+	if (($code & (E_DEPRECATED | E_USER_DEPRECATED)) AND (error_reporting() & $code)
+		AND class_exists('PHPUnit\Runner\ErrorHandler'))
 	{
 		try
 		{
@@ -166,9 +167,10 @@ set_error_handler(function ($code, $error, $file, $line)
 		}
 		catch (PHPUnit\Event\Code\NoTestCaseObjectOnCallStackException $e)
 		{
-			// Loading a test file, a data provider or setUpBeforeClass(): let Kohana throw
+			// Loading a test file, a data provider or setUpBeforeClass()
 		}
 	}
 
-	return Kohana::error_handler($code, $error, $file, $line);
+	// Without a previous handler, PHP's own error handling continues
+	return $previous ? $previous($code, $error, $file, $line) : FALSE;
 });

@@ -83,71 +83,17 @@
    <issue><![CDATA[Method ReflectionProperty::setAccessible() is deprecated since 8.5, as it has no effect since PHP 8.1]]></issue>
   </line>
  </file>
+ <file path="system/tests/kohana/CoreTest.php">
+  <line number="273" hash="c430bb9b6c8a56f573a51f635c9991407c32be73">
+   <issue><![CDATA[Deprecation forwarded to PHPUnit]]></issue>
+  </line>
+ </file>
  <file path="system/classes/Kohana/Date.php">
   <line number="71" hash="86070b3f2edc5efbb8aaea1515f91105374edda4">
    <issue><![CDATA[DateTime::__construct(): Passing null to parameter #1 ($datetime) of type string is deprecated]]></issue>
   </line>
   <line number="72" hash="e347c54c0c22cf63f42a6223eaedba72f10255ec">
    <issue><![CDATA[DateTime::__construct(): Passing null to parameter #1 ($datetime) of type string is deprecated]]></issue>
-  </line>
- </file>
- <file path="system/tests/kohana/HTTPTest.php">
-  <line number="29" hash="e895eb025ed0c000415b3999cd96e015e684c6e6">
-   <issue><![CDATA[Creation of dynamic property Kohana_HTTPTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_HTTPTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_HTTPTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_HTTPTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_HTTPTest::$_initial_request is deprecated]]></issue>
-  </line>
- </file>
- <file path="system/tests/kohana/RequestTest.php">
-  <line number="27" hash="e895eb025ed0c000415b3999cd96e015e684c6e6">
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_RequestTest::$_initial_request is deprecated]]></issue>
   </line>
  </file>
  <file path="system/classes/Kohana/Text.php">
@@ -214,35 +160,6 @@
  <file path="system/classes/Kohana/Validation.php">
   <line number="549" hash="24c681b7986a455356d5e28972adb64fdb8fdffe">
    <issue><![CDATA[Using null as an array offset is deprecated, use an empty string instead]]></issue>
-  </line>
- </file>
- <file path="system/tests/kohana/request/ClientTest.php">
-  <line number="67" hash="e895eb025ed0c000415b3999cd96e015e684c6e6">
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$_initial_request is deprecated]]></issue>
-  </line>
-  <line number="404" hash="f458d8254ba76bb7bfb292a1f021b4b05a933b39">
-   <issue><![CDATA[Creation of dynamic property Kohana_Request_ClientTest::$requests_executed is deprecated]]></issue>
   </line>
  </file>
  <file path="modules/cache/tests/cache/CacheTest.php">
