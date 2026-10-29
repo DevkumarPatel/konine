@@ -318,6 +318,65 @@ class Kohana_Auth_ORMTest extends Unittest_TestCase
 		$this->assertTrue($auth->check_password('password'));
 		$this->assertFalse($auth->check_password('wrong-password'));
 	}
+
+	/**
+	 * @test
+	 * @dataProvider provider_drivers
+	 * @covers Auth::login
+	 * @covers Auth_ORM::_login
+	 * @covers Auth_Bcrypt::_login
+	 * @covers Model_Auth_User::unique_key
+	 * @param string $driver Auth driver
+	 */
+	public function test_login_by_email_and_failed_logins($driver)
+	{
+		$auth = $this->auth($driver);
+
+		$this->insert_user('alice', $auth->hash('password'), [1]);
+
+		$this->assertFalse($auth->login('nobody', 'password'));
+		$this->assertFalse($auth->login('alice', ''));
+		$this->assertFalse($auth->logged_in());
+
+		$this->assertTrue($auth->login('alice@example.com', 'password'));
+		$this->assertSame('alice', $auth->get_user()->username);
+	}
+
+	/**
+	 * force_login() must refuse unknown usernames instead of storing an
+	 * empty user in the session.
+	 *
+	 * @test
+	 * @dataProvider provider_drivers
+	 * @covers Auth_ORM::force_login
+	 * @covers Auth_ORM::complete_login
+	 * @covers Auth_Bcrypt::force_login
+	 * @covers Auth::complete_login
+	 * @covers Model_Auth_User::unique_key
+	 * @param string $driver Auth driver
+	 */
+	public function test_force_login_requires_existing_user($driver)
+	{
+		$auth = $this->auth($driver);
+
+		$this->insert_user('alice', $auth->hash('password'), [1]);
+
+		try
+		{
+			$auth->force_login('nobody');
+
+			$this->fail('Expected Kohana_Exception');
+		}
+		catch (Kohana_Exception $e)
+		{
+			$this->assertFalse($auth->logged_in());
+		}
+
+		$auth->force_login('alice');
+
+		$this->assertTrue($auth->logged_in());
+		$this->assertSame('alice', $auth->get_user()->username);
+	}
 }
 
 /**
