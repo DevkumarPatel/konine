@@ -39,8 +39,18 @@ class Kohana_EncryptTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @dataProvider provider_decode_returns_encoded_text
+	 * @covers Encrypt::__construct
 	 * @covers Encrypt::encode
 	 * @covers Encrypt::decode
+	 * @covers Encrypt::_create_iv
+	 * @covers Encrypt_Engine::__construct
+	 * @covers Encrypt_Engine_Openssl::__construct
+	 * @covers Encrypt_Engine_Openssl::encrypt
+	 * @covers Encrypt_Engine_Openssl::decrypt
+	 * @covers Encrypt_Engine_Openssl::valid_payload
+	 * @covers Encrypt_Engine_Openssl::valid_mac
+	 * @covers Encrypt_Engine_Openssl::hash
+	 * @covers Encrypt_Engine_Openssl::create_iv
 	 */
 	public function test_decode_returns_encoded_text($cipher, $key, $text)
 	{
@@ -58,6 +68,7 @@ class Kohana_EncryptTest extends Unittest_TestCase
 	 *
 	 * @test
 	 * @covers Encrypt::encode
+	 * @covers Encrypt_Engine_Openssl::create_iv
 	 */
 	public function test_encode_is_not_deterministic()
 	{
@@ -67,8 +78,31 @@ class Kohana_EncryptTest extends Unittest_TestCase
 	}
 
 	/**
+	 * Data encrypted by earlier releases must stay decodable, so the payload
+	 * format and MAC derivation must not change.
+	 *
 	 * @test
 	 * @covers Encrypt::decode
+	 * @covers Encrypt_Engine_Openssl::decrypt
+	 * @covers Encrypt_Engine_Openssl::valid_payload
+	 * @covers Encrypt_Engine_Openssl::valid_mac
+	 * @covers Encrypt_Engine_Openssl::hash
+	 */
+	public function test_decode_pinned_payload()
+	{
+		$encrypt = new Encrypt(['key' => $this->key]);
+
+		$encoded = 'eyJpdiI6IjVXSXowOFJuZXF3VmtKS0Y1Rk1qcVE9PSIsInZhbHVlIjoidVFtNTl2V3FSajVIWU1aM2JKTUIxQT09IiwibWFj'
+			.'IjoiZTVjOWZiNjk2MWM0ZDlmYTIwMTZmNjNkMTMyN2QwZTQ2ZDA0NWM5YWQ5ZTIzNWMyOGE2MTc0ODIwNGZlOGFjYyJ9';
+
+		$this->assertSame('test text', $encrypt->decode($encoded));
+	}
+
+	/**
+	 * @test
+	 * @covers Encrypt::decode
+	 * @covers Encrypt_Engine_Openssl::decrypt
+	 * @covers Encrypt_Engine_Openssl::valid_mac
 	 */
 	public function test_decode_with_different_key_returns_false()
 	{
@@ -82,6 +116,46 @@ class Kohana_EncryptTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @covers Encrypt::decode
+	 * @covers Encrypt_Engine_Openssl::decrypt
+	 * @covers Encrypt_Engine_Openssl::valid_mac
+	 */
+	public function test_decode_with_tampered_mac_returns_false()
+	{
+		$encrypt = new Encrypt(['key' => $this->key]);
+
+		$payload = json_decode(base64_decode($encrypt->encode('test text')), TRUE);
+		$payload['mac'] = strrev($payload['mac']);
+
+		$this->assertFalse($encrypt->decode(base64_encode(json_encode($payload))));
+	}
+
+	/**
+	 * Flipping a bit in the IV flips the same bit in the first plaintext
+	 * block, so without the MAC check this would decode to "uest text".
+	 *
+	 * @test
+	 * @covers Encrypt::decode
+	 * @covers Encrypt_Engine_Openssl::decrypt
+	 * @covers Encrypt_Engine_Openssl::valid_mac
+	 */
+	public function test_decode_with_tampered_iv_returns_false()
+	{
+		$encrypt = new Encrypt(['key' => $this->key]);
+
+		$payload = json_decode(base64_decode($encrypt->encode('test text')), TRUE);
+
+		$iv = base64_decode($payload['iv']);
+		$iv[0] = chr(ord($iv[0]) ^ 1);
+		$payload['iv'] = base64_encode($iv);
+
+		$this->assertFalse($encrypt->decode(base64_encode(json_encode($payload))));
+	}
+
+	/**
+	 * @test
+	 * @covers Encrypt::decode
+	 * @covers Encrypt_Engine_Openssl::decrypt
+	 * @covers Encrypt_Engine_Openssl::valid_payload
 	 */
 	public function test_decode_tampered_data_returns_false()
 	{
@@ -89,7 +163,7 @@ class Kohana_EncryptTest extends Unittest_TestCase
 
 		$payload = json_decode(base64_decode($encrypt->encode('test text')), TRUE);
 
-		// Swap in the ciphertext of another text but keep the original MAC
+		// Swap in the ciphertext of another text
 		$other = json_decode(base64_decode($encrypt->encode('evil text')), TRUE);
 		$payload['value'] = $other['value'];
 
@@ -99,6 +173,8 @@ class Kohana_EncryptTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Encrypt::__construct
+	 * @covers Encrypt_Engine::__construct
 	 * @covers Encrypt_Engine_Openssl::__construct
 	 */
 	public function test_key_must_match_cipher_length()

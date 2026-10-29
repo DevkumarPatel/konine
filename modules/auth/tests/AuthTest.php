@@ -37,9 +37,18 @@ class Kohana_AuthTest extends Unittest_TestCase
 		Session::instance('native')->delete($this->config['session_key']);
 	}
 
+	public function tearDown(): void
+	{
+		Session::instance('native')->delete($this->config['session_key']);
+
+		parent::tearDown();
+	}
+
 	/**
 	 * @test
+	 * @covers Auth::__construct
 	 * @covers Auth::hash
+	 * @covers Auth_File::__construct
 	 */
 	public function test_hash_uses_configured_method_and_key()
 	{
@@ -66,6 +75,8 @@ class Kohana_AuthTest extends Unittest_TestCase
 	 * @covers Auth::login
 	 * @covers Auth::logged_in
 	 * @covers Auth::get_user
+	 * @covers Auth::complete_login
+	 * @covers Auth_File::_login
 	 */
 	public function test_login_with_correct_password()
 	{
@@ -88,6 +99,7 @@ class Kohana_AuthTest extends Unittest_TestCase
 			['test_user', 'wrong password'],
 			['test_user', ''],
 			['unknown_user', 'test password'],
+			['test_user', hash_hmac('sha256', 'test password', 'test-hash-key')],
 		];
 	}
 
@@ -96,6 +108,7 @@ class Kohana_AuthTest extends Unittest_TestCase
 	 * @dataProvider provider_login_with_wrong_credentials_fails
 	 * @covers Auth::login
 	 * @covers Auth::logged_in
+	 * @covers Auth_File::_login
 	 */
 	public function test_login_with_wrong_credentials_fails($username, $password)
 	{
@@ -108,6 +121,8 @@ class Kohana_AuthTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @covers Auth::logout
+	 * @covers Auth::logged_in
+	 * @covers Auth::get_user
 	 */
 	public function test_logout()
 	{
