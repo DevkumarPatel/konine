@@ -49,15 +49,14 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 	{
 		$this->db->disconnect();
 
-		unset(Database::$instances['unittest_sqlite']);
-
 		$this->db = NULL;
 
 		parent::tearDown();
 	}
 
 	/**
-	 * Provides test data for test_compile()
+	 * Provides test data for test_compile(). Queries are built inside the
+	 * test so the builder methods count towards its coverage.
 	 *
 	 * @return array
 	 */
@@ -66,51 +65,111 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 		return [
 			[
 				'SELECT "id", "name" FROM "people" WHERE "age" > 25 AND "name" IS NOT NULL OR "id" IN (1, 2) ORDER BY "name" DESC LIMIT 2 OFFSET 1',
-				DB::select('id', 'name')
-					->from('people')
-					->where('age', '>', 25)
-					->and_where('name', '!=', NULL)
-					->or_where('id', 'IN', [1, 2])
-					->order_by('name', 'desc')
-					->limit(2)
-					->offset(1),
+				function () {
+					return DB::select('id', 'name')
+						->from('people')
+						->where('age', '>', 25)
+						->and_where('name', '!=', NULL)
+						->or_where('id', 'IN', [1, 2])
+						->order_by('name', 'desc')
+						->limit(2)
+						->offset(1);
+				},
 			],
 			[
 				'SELECT * FROM "people" WHERE "name" = \'bob\'',
-				DB::select()->from('people')->where('name', '=', ':name')->param(':name', 'bob'),
+				function () {
+					return DB::select()->from('people')->where('name', '=', ':name')->param(':name', 'bob');
+				},
 			],
 			[
 				'INSERT INTO "people" ("name", "age") VALUES (\'dave\', 40), (\'o\'\'neil\', NULL)',
-				DB::insert('people', ['name', 'age'])->values(['dave', 40])->values(["o'neil", NULL]),
+				function () {
+					return DB::insert('people', ['name', 'age'])->values(['dave', 40])->values(["o'neil", NULL]);
+				},
 			],
 			[
 				'UPDATE "people" SET "age" = 31, "name" = \'Alice\' WHERE "name" = \'alice\'',
-				DB::update('people')->set(['age' => 31, 'name' => 'Alice'])->where('name', '=', 'alice'),
+				function () {
+					return DB::update('people')->set(['age' => 31, 'name' => 'Alice'])->where('name', '=', 'alice');
+				},
 			],
 			[
 				'DELETE FROM "people" WHERE "age" BETWEEN 20 AND 30',
-				DB::delete('people')->where('age', 'BETWEEN', [20, 30]),
+				function () {
+					return DB::delete('people')->where('age', 'BETWEEN', [20, 30]);
+				},
+			],
+			[
+				'SELECT * FROM "people" WHERE "age" > 20 AND ("name" = \'alice\' OR "name" = \'bob\')',
+				function () {
+					return DB::select()
+						->from('people')
+						->where('age', '>', 20)
+						->and_where_open()
+						->where('name', '=', 'alice')
+						->or_where('name', '=', 'bob')
+						->and_where_close();
+				},
+			],
+			[
+				'SELECT * FROM "people"',
+				function () {
+					return DB::select()->from('people')->where_open()->where_close_empty();
+				},
+			],
+			[
+				'SELECT "people"."name" AS "n", COUNT(*) AS "total" FROM "people" AS "p"',
+				function () {
+					return DB::select(['people.name', 'n'], [DB::expr('COUNT(*)'), 'total'])->from(['people', 'p']);
+				},
 			],
 		];
 	}
 
 	/**
 	 * @test
+	 * @covers Database_Query::compile
+	 * @covers Database_Query::param
+	 * @covers Database_Query_Builder::_compile_conditions
+	 * @covers Database_Query_Builder::_compile_set
+	 * @covers Database_Query_Builder::_compile_order_by
+	 * @covers Database_Query_Builder_Where::where
+	 * @covers Database_Query_Builder_Where::and_where
+	 * @covers Database_Query_Builder_Where::or_where
+	 * @covers Database_Query_Builder_Where::where_open
+	 * @covers Database_Query_Builder_Where::and_where_open
+	 * @covers Database_Query_Builder_Where::and_where_close
+	 * @covers Database_Query_Builder_Where::where_close_empty
+	 * @covers Database_Query_Builder_Where::order_by
+	 * @covers Database_Query_Builder_Where::limit
+	 * @covers Database_Query_Builder_Select::from
+	 * @covers Database_Query_Builder_Select::offset
 	 * @covers Database_Query_Builder_Select::compile
+	 * @covers Database_Query_Builder_Insert::values
 	 * @covers Database_Query_Builder_Insert::compile
+	 * @covers Database_Query_Builder_Update::set
 	 * @covers Database_Query_Builder_Update::compile
 	 * @covers Database_Query_Builder_Delete::compile
+	 * @covers Database::quote_column
+	 * @covers Database::quote_table
+	 * @covers Database::quote
+	 * @covers Database_PDO::escape
 	 * @dataProvider provider_compile
 	 */
-	public function test_compile($expected, Database_Query $query)
+	public function test_compile($expected, Closure $build)
 	{
-		$this->assertSame($expected, $query->compile($this->db));
+		$this->assertSame($expected, $build()->compile($this->db));
 	}
 
 	/**
 	 * @test
 	 * @covers Database::quote_table
 	 * @covers Database::quote_column
+	 * @covers Database::table_prefix
+	 * @covers Database_Query_Builder::_compile_join
+	 * @covers Database_Query_Builder_Join::on
+	 * @covers Database_Query_Builder_Join::compile
 	 */
 	public function test_compile_adds_table_prefix()
 	{
@@ -127,27 +186,27 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 
 		try
 		{
-			$query = DB::select('people.name')
-				->from('people')
+			$query = DB::select('p.name')
+				->from(['people', 'p'])
 				->join('pets')
-				->on('pets.person_id', '=', 'people.id')
-				->where('people.age', '>', 25);
+				->on('pets.person_id', '=', 'p.id')
+				->where('p.age', '>', 25);
 
 			$this->assertSame(
-				'SELECT "kn_people"."name" FROM "kn_people" JOIN "kn_pets" ON ("kn_pets"."person_id" = "kn_people"."id") WHERE "kn_people"."age" > 25',
+				'SELECT "kn_p"."name" FROM "kn_people" AS "kn_p" JOIN "kn_pets" ON ("kn_pets"."person_id" = "kn_p"."id") WHERE "kn_p"."age" > 25',
 				$query->compile($db)
 			);
 		}
 		finally
 		{
 			$db->disconnect();
-
-			unset(Database::$instances['unittest_sqlite_prefix']);
 		}
 	}
 
 	/**
 	 * @test
+	 * @covers Database_Query::execute
+	 * @covers Database_PDO::connect
 	 * @covers Database_PDO::query
 	 */
 	public function test_select_returns_matching_rows()
@@ -167,20 +226,21 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Database_Query::execute
 	 * @covers Database_PDO::query
 	 */
 	public function test_insert_returns_insert_id_and_affected_rows()
 	{
-		$result = DB::insert('people', ['name', 'age'])
-			->values(['dave', 40])
-			->values(['erin', 45])
-			->execute($this->db);
+		$this->assertSame(['4', 1], DB::insert('people', ['name'])->values(['dave'])->execute($this->db));
 
-		$this->assertSame(['5', 2], $result);
+		list(, $affected_rows) = DB::insert('people', ['name'])->values(['erin'])->values(['frank'])->execute($this->db);
+
+		$this->assertSame(2, $affected_rows);
 	}
 
 	/**
 	 * @test
+	 * @covers Database_Query::execute
 	 * @covers Database_PDO::query
 	 */
 	public function test_update_returns_affected_rows()
@@ -191,7 +251,9 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Database_Query::execute
 	 * @covers Database_PDO::query
+	 * @covers Database::count_records
 	 */
 	public function test_delete_returns_affected_rows()
 	{
@@ -223,6 +285,7 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 	 * @test
 	 * @covers Database::quote
 	 * @covers Database_PDO::escape
+	 * @covers Database_Expression::compile
 	 * @dataProvider provider_quote
 	 */
 	public function test_quote($expected, $value)
@@ -232,7 +295,9 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Database_Query::as_object
 	 * @covers Database_PDO::query
+	 * @covers Database_Result_Cached::current
 	 */
 	public function test_as_object_returns_stdclass()
 	{
@@ -244,7 +309,10 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 
 	/**
 	 * @test
+	 * @covers Database_Query::as_object
 	 * @covers Database_PDO::query
+	 * @covers Database_Result::as_array
+	 * @covers Database_Result::get
 	 */
 	public function test_as_object_returns_instances_of_class()
 	{
@@ -275,9 +343,13 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 	}
 
 	/**
+	 * The connection sees its own uncommitted writes, so a new transaction
+	 * is started afterwards: PDO refuses to begin one while another is open.
+	 *
 	 * @test
 	 * @covers Database_PDO::begin
 	 * @covers Database_PDO::commit
+	 * @covers Database_PDO::rollback
 	 */
 	public function test_commit_keeps_changes()
 	{
@@ -286,12 +358,15 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 		DB::insert('people', ['name'])->values(['dave'])->execute($this->db);
 
 		$this->assertTrue($this->db->commit());
+		$this->assertTrue($this->db->begin());
+		$this->assertTrue($this->db->rollback());
 		$this->assertSame(4, $this->db->count_records('people'));
 	}
 
 	/**
 	 * @test
 	 * @covers Database_PDO::create_function
+	 * @covers Database_PDO::query
 	 */
 	public function test_create_function_is_callable_from_sql()
 	{
@@ -307,6 +382,7 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 	/**
 	 * @test
 	 * @covers Database_PDO::create_aggregate
+	 * @covers Database_PDO::query
 	 */
 	public function test_create_aggregate_is_callable_from_sql()
 	{
@@ -331,6 +407,32 @@ class Kohana_Database_PDOTest extends Unittest_TestCase
 		$this->expectExceptionMessage('[ SELECT * FROM "missing" ]');
 
 		DB::select()->from('missing')->execute($this->db);
+	}
+
+	/**
+	 * @test
+	 * @covers Database_PDO::connect
+	 */
+	public function test_connect_with_invalid_dsn_throws_database_exception()
+	{
+		$db = Database::instance('unittest_invalid_dsn', [
+			'type'       => 'PDO',
+			'connection' => [
+				'dsn'        => 'nodriver:x',
+				'persistent' => FALSE,
+			],
+		]);
+
+		$this->expectException(Database_Exception::class);
+
+		try
+		{
+			$db->connect();
+		}
+		finally
+		{
+			$db->disconnect();
+		}
 	}
 
 	/**
